@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>CRC32 Hash Generator</title>
+</head>
+<body>
+  <h1>CRC32 Hash Generator</h1>
+Used for external IDs (eg Office/Google syncs)<p>
+
+  <form onsubmit="generateHash(event)">
+    <label for="inputString2">Enter a string:</label><br>
+    <input type="text" id="inputString2" name="inputString2" required><br><br>
+    <button type="submit">Generate CRC32 Hash</button>
+  </form><p>
+  <b>CRC32 Hash Output:</b>
+  <p id="outputHash"></p>
+<P><br><br>
+
+    <h1>SHA-256 Hash Generator</h1>
+Used for 3rd party bearer tokens<p>
+    <label for="inputString">Enter a string:</label>
+    <input type="text" id="inputString" placeholder="Type a string..." />
+    <button onclick="calculateHash()">Calculate Hash</button>
+<p>
+<b>CRC32 Hash Output:</b>
+    <p id="hashedString"></p>
+</body>
+  <script>
+    // CRC32 function
+    function crc32(str) {
+      let crcTable = (function () {
+        let table = [];
+        for (let i = 0; i < 256; i++) {
+          let c = i;
+          for (let j = 0; j < 8; j++) {
+            c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+          }
+          table.push(c);
+        }
+        return table;
+      })();
+
+      let crc = 0 ^ -1;
+      for (let i = 0; i < str.length; i++) {
+        crc = (crc >>> 8) ^ crcTable[(crc ^ str.charCodeAt(i)) & 0xFF];
+      }
+      return (crc ^ -1) >>> 0;
+    }
+
+    // Handle form submission
+    function generateHash(event) {
+      event.preventDefault();
+      const inputString2 = document.getElementById('inputString2').value;
+      const hashOutput = crc32(inputString2);
+      document.getElementById('outputHash').textContent = hashOutput;
+    }
+
+function calculateHash() {
+            // Get the input string from the user
+            const inputString = document.getElementById('inputString').value;
+
+            // Choose a hash algorithm (SHA-256 in this case)
+            const hashAlgorithm = 'sha-256';
+
+            // Create a hash object
+            const crypto = window.crypto || window.msCrypto;
+            const subtle = crypto.subtle || crypto.webkitSubtle;
+            subtle.digest(hashAlgorithm, new TextEncoder().encode(inputString))
+                .then(hashBuffer => {
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    const hashedString = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+                    document.getElementById('hashedString').textContent = hashedString;
+                })
+                .catch(error => {
+                    console.error('Error calculating hash:', error);
+                });
+}
+  </script>
+</html>

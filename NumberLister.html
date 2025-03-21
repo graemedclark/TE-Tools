@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number List Formatter</title>
+</head>
+<body>
+    <h2>Number List Formatter</h2>
+    <textarea id="numberInput" rows="5" cols="30" placeholder="Enter numbers..."></textarea>
+    <br>
+    <button onclick="formatNumbers()">Format</button>
+    <h3>Formatted Output:</h3>
+    <p id="output"></p>
+
+    <script>
+        function formatNumbers() {
+            let input = document.getElementById("numberInput").value;
+            let numbers = input.split(/\s+/).map(num => num.replace(/,$/, "")).filter(num => num.trim() !== "");
+            document.getElementById("output").innerText = numbers.join(",");
+        }
+    </script>
+</body>
+</html>
