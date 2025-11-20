@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clio Email Split Instruction Generator</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    label { display: block; margin-top: 12px; font-weight: bold; }
+    select, input { width: 360px; padding: 6px; margin-top: 6px; }
+    #output { margin-top: 20px; padding: 18px; border: 1px solid #ccc; background: #f9f9f9; white-space: pre-wrap; min-height: 120px; }
+    button { margin-top: 12px; padding: 10px 14px; margin-right: 8px; }
+    .controls { margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Clio Email Split Instruction Generator</h1>
+
+  <label for="app">App Split is initiated for:</label>
+  <select id="app" aria-label="App">
+    <option value="Draft">Draft</option>
+    <option value="Grow">Grow</option>
+    <option value="Manage">Manage</option>
+  </select>
+
+  <label for="type">Type:</label>
+  <select id="type" aria-label="Type">
+    <option value="Merge">Merge</option>
+    <option value="Split">Split</option>
+    <option value="Account Transfer">Account Transfer</option>
+  </select>
+
+  <label for="email1">Email Address 1:</label>
+  <input id="email1" type="email" placeholder="user1@example.com" />
+
+  <label for="email2">Email Address 2:</label>
+  <input id="email2" type="email" placeholder="user2@example.com" />
+
+  <label for="identity2">Does Email Address 2 exist in Identity?</label>
+  <select id="identity2" aria-label="Identity exists">
+    <option value="Yes">Yes</option>
+    <option value="No">No</option>
+  </select>
+
+  <div class="controls">
+    <button id="genBtn" onclick="generateScript()">Generate Script</button>
+    <button id="clearBtn" onclick="clearOutput()">Clear</button>
+  </div>
+
+  <div id="output" aria-live="polite"></div>
+
+  <script>
+    function generateStep3Title(app) {
+      if (app === 'Grow') return 'Action Required: Confirm your Grow email change';
+      if (app === 'Manage') return 'Action Required: Confirm your Manage email change';
+      if (app === 'Draft') return 'Invitation to migrate your Clio Draft authentication to Clio Identity';
+      return 'Action Required: Confirm your email change';
+    }
+
+    function sanitize(text) {
+      return (text || '').trim();
+    }
+
+    function generateScript() {
+      const app = sanitize(document.getElementById('app').value);
+      const type = sanitize(document.getElementById('type').value);
+      const email1 = sanitize(document.getElementById('email1').value);
+      const email2 = sanitize(document.getElementById('email2').value);
+      const identity2 = sanitize(document.getElementById('identity2').value);
+      const step3Title = generateStep3Title(app);
+
+      let script = '';
+
+      // ACCOUNT TRANSFER - IDENTITY
+      if (type === 'Account Transfer' && identity2 === 'Yes') {
+        script = `Account Transfer Identity\n\n1. Log into the Clio ${app} account using the ${email1} email\n2. A “Split your user” email will be sent to ${email1}\n3. Click on the link in the email\n    • If you are not logged into any Clio account, you will be prompted to log in\n    • You will need to be logged into the account for ${email1}\n4. In the prompt, enter the new email address (${email2})\n5. If accepted, a “Confirm your email address” email will be sent to ${email2}\n6. ${email2} should forward this email to ${email1} if the users are on different computers\n7. While still logged into the ${email1} account, click on the link in the email\n    • If successful, they will see a \"Your user has been split. You will receive an email with instructions on how to access your new account.\" message\n    • You will be logged out of your Clio account\n8. An ${step3Title} email will be sent to ${email2}\n9. Click the link in the email\n    • You should be prompted to log in\n    • Log into your Clio account for ${email2}`;
+        if (app === 'Draft') {
+          script += `\n10. Once logged into Clio Draft, go to Settings > Profile to update the Clio Draft user name`;
+        }
+        document.getElementById('output').textContent = script;
+        return;
+      }
+
+      // ACCOUNT TRANSFER - NON-IDENTITY
+      if (type === 'Account Transfer' && identity2 === 'No') {
+        script = `Account Transfer Non Identity\n\n1. Log into the Clio ${app} account using the ${email1} email\n2. A “Split your user” email will be sent to ${email1}\n3. Click on the link in the email\n    • If you are not logged into any Clio account, you will be prompted to log in\n    • You will need to be logged into the account for ${email1}\n4. In the prompt, enter the new email address (${email2})\n5. If accepted, a “Confirm your email address” email will be sent to ${email2}\n6. ${email2} should forward this email to ${email1} if the users are on different computers\n7. While still logged into the ${email1} account, click on the link in the email\n    • If successful, they will see a \"Your user has been split. You will receive an email with instructions on how to access your new account.\" message\n    • You will be logged out of your Clio account\n8. An ${step3Title} email will be sent to ${email2}\n9. Click the link in the email\n    • You should be prompted to create a new Clio Account\n    • Enter your name and password and create the account`;
+        if (app === 'Draft') {
+          script += `\n10. Once logged into Clio Draft, go to Settings > Profile to update the Clio Draft user name`;
+        }
+        document.getElementById('output').textContent = script;
+        return;
+      }
+
+      // MERGE - FULL SCRIPT
+      if (type === 'Merge') {
+        script = `Single user Merge Script\n\n1. Log into your Clio ${app} account using the ${email1} email\n2. A “Split your user” email will be sent to ${email1}\n3. Click on the link in the email\n    • If you are no logged into any Clio account, you will be prompted to log in\n    • You will need to be logged into the account for ${email1}\n4. In the prompt, enter the email address for your other account (${email2})\n5. If accepted, a “Confirm your email address” email will be sent to ${email2}\n6. Click on the link in the email\n    • You will still need to be logged into your Clio account for ${email1}\n    • If successful, they will see a \"Your user has been split. You will receive an email with instructions on how to access your new account.\" message\n    • You will be logged out of your Clio account\n7. An ${step3Title} email will be sent to ${email2}\n    • This is not an invitation to create a new account\n8. Click the link in the email\n    • You should be prompted to log in\n    • Log into your Clio account for ${email2}`;
+        document.getElementById('output').textContent = script;
+        return;
+      }
+
+      // SPLIT - NON-IDENTITY - FULL SCRIPT
+      if (type === 'Split' && identity2 === 'No') {
+        script = `Single User Non Identity Split Script\n\n1. Log into your Clio ${app} account using the ${email1} email\n2. A “Split your user” email will be sent to ${email1}\n3. Click on the link in the email\n    • If you are no logged into any Clio account, you will be prompted to log in\n    • You will need to be logged into the account for ${email1}\n4. In the prompt, enter the new email address (${email2})\n5. If accepted, a “Confirm your email address” email will be sent to ${email2}\n6. Click on the link in the email\n    • You will still need to be logged into your Clio account for ${email1}\n    • If successful, they will see a \"Your user has been split. You will receive an email with instructions on how to access your new account.\" message\n    • You will be logged out of your Clio account\n7. An ${step3Title} email will be sent to ${email2}\n8. Click the link in the email\n    • You should be prompted to create a new Clio Account\n    • Enter your name and password and create the account`;
+        document.getElementById('output').textContent = script;
+        return;
+      }
+
+      // SPLIT - IDENTITY - FULL SCRIPT
+      if (type === 'Split' && identity2 === 'Yes') {
+        script = `Single User Identity Split Script\n\n1. Log into your Clio ${app} account using the ${email1} email\n2. A “Split your user” email will be sent to ${email1}\n3. Click on the link in the email\n    • If you are no logged into any Clio account, you will be prompted to log in\n    • You will need to be logged into the account for ${email1}\n4. In the prompt, enter the new email address (${email2})\n5. If accepted, a “Confirm your email address” email will be sent to ${email2}\n6. Click on the link in the email\n    • You will still need to be logged into your Clio account for ${email1}\n    • If successful, they will see a \"Your user has been split. You will receive an email with instructions on how to access your new account.\" message\n    • You will be logged out of your Clio account\n7. An ${step3Title} email will be sent to ${email2}\n8. Click the link in the email\n    • You should be prompted to log in\n    • Log into your Clio account for ${email2}`;
+        document.getElementById('output').textContent = script;
+        return;
+      }
+
+      // Fallback
+      document.getElementById('output').textContent = 'No matching script found. Please check your selections.';
+    }
+
+    function copyOutput() {
+      const text = document.getElementById('output').textContent;
+      if (!text) {
+        alert('Nothing to copy. Generate a script first.');
+        return;
+      }
+      navigator.clipboard.writeText(text).then(() => {
+        const prev = document.getElementById('copyBtn');
+        const orig = prev.textContent;
+        prev.textContent = 'Copied!';
+        setTimeout(() => prev.textContent = orig, 1400);
+      }).catch(() => {
+        alert('Copy failed — your browser may not allow clipboard access.');
+      });
+    }
+
+    function clearOutput() {
+      document.getElementById('output').textContent = '';
+    }
+  </script>
+</body>
+</html>
