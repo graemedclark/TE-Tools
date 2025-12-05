@@ -17,3 +17,4 @@ Found at https://graemedclark.github.io/TE-Tools/
   - Click on file
   - Click ...
   - Click Delete file (you may need to scroll down)
+  - Commit changes
