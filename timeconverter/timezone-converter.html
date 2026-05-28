@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timezone Tools</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f1117;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 20px;
+    letter-spacing: -0.3px;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 28px;
+    background: #1a1d27;
+    border-radius: 10px;
+    padding: 4px;
+    width: fit-content;
+  }
+  .tab-btn {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-btn.active {
+    background: #6366f1;
+    color: #fff;
+  }
+  .tab-btn:hover:not(.active) {
+    background: #252836;
+    color: #e2e8f0;
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Card */
+  .card {
+    background: #1a1d27;
+    border: 1px solid #2d3148;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  /* Input row */
+  .input-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  input[type="text"] {
+    background: #252836;
+    border: 1px solid #3a3f5c;
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: #e2e8f0;
+    font-size: 1rem;
+    outline: none;
+    width: 180px;
+    transition: border-color 0.2s;
+  }
+  input[type="text"]:focus {
+    border-color: #6366f1;
+  }
+  input[type="text"].error {
+    border-color: #ef4444;
+  }
+
+  /* Custom searchable dropdown */
+  .dropdown-wrap {
+    position: relative;
+  }
+  .dropdown-input {
+    background: #252836;
+    border: 1px solid #3a3f5c;
+    border-radius: 8px;
+    padding: 10px 32px 10px 14px;
+    color: #e2e8f0;
+    font-size: 0.9rem;
+    cursor: pointer;
+    width: 220px;
+    outline: none;
+    transition: border-color 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    user-select: none;
+  }
+  .dropdown-input::after {
+    content: '▾';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    pointer-events: none;
+    font-size: 0.85rem;
+  }
+  .dropdown-input:focus, .dropdown-input.open {
+    border-color: #6366f1;
+  }
+
+  .dropdown-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 280px;
+    background: #1e2132;
+    border: 1px solid #3a3f5c;
+    border-radius: 10px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    z-index: 1000;
+    display: none;
+    overflow: hidden;
+  }
+  .dropdown-menu.open { display: flex; flex-direction: column; }
+
+  .dropdown-search {
+    padding: 10px 12px;
+    border-bottom: 1px solid #2d3148;
+  }
+  .dropdown-search input {
+    width: 100%;
+    background: #252836;
+    border: 1px solid #3a3f5c;
+    border-radius: 6px;
+    padding: 7px 10px;
+    color: #e2e8f0;
+    font-size: 0.88rem;
+    outline: none;
+  }
+  .dropdown-search input:focus { border-color: #6366f1; }
+
+  .dropdown-list {
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 6px 0;
+  }
+  .dropdown-list::-webkit-scrollbar { width: 5px; }
+  .dropdown-list::-webkit-scrollbar-track { background: transparent; }
+  .dropdown-list::-webkit-scrollbar-thumb { background: #3a3f5c; border-radius: 3px; }
+
+  .dropdown-option {
+    padding: 9px 14px;
+    font-size: 0.88rem;
+    color: #cbd5e1;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .dropdown-option:hover { background: #2d3148; color: #fff; }
+  .dropdown-option.selected { background: #312e81; color: #a5b4fc; }
+  .dropdown-option.separator {
+    font-size: 0.73rem;
+    color: #475569;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 10px 14px 4px;
+    cursor: default;
+    pointer-events: none;
+  }
+  .dropdown-option.hidden { display: none; }
+
+  /* DST row */
+  .dst-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .dst-label {
+    font-size: 0.82rem;
+    color: #94a3b8;
+  }
+  .dst-badge {
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: #1e3a5f;
+    color: #60a5fa;
+  }
+
+  /* Small select */
+  select.small-select {
+    background: #252836;
+    border: 1px solid #3a3f5c;
+    border-radius: 6px;
+    padding: 5px 10px;
+    color: #e2e8f0;
+    font-size: 0.82rem;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .btn {
+    background: #6366f1;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: #4f46e5; }
+  .btn.sm { padding: 7px 14px; font-size: 0.82rem; }
+
+  .error-msg {
+    font-size: 0.8rem;
+    color: #f87171;
+    margin-top: 8px;
+    display: none;
+  }
+
+  /* Results table */
+  .results-card {
+    background: #1a1d27;
+    border: 1px solid #2d3148;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .results-card h3 {
+    padding: 16px 20px 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #6366f1;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    border-bottom: 1px solid #2d3148;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th {
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: #16192a;
+    border-bottom: 1px solid #2d3148;
+  }
+  td {
+    padding: 12px 16px;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #1e2132;
+    color: #cbd5e1;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #1e2132; }
+  .tz-name { color: #e2e8f0; font-weight: 600; }
+  .time-24 { color: #a5b4fc; font-variant-numeric: tabular-nums; }
+  .time-12 { color: #86efac; font-variant-numeric: tabular-nums; }
+  .dst-indicator {
+    font-size: 0.72rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #1e3a5f;
+    color: #60a5fa;
+    margin-left: 6px;
+    font-weight: 600;
+  }
+  .std-indicator {
+    font-size: 0.72rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #2d1f4a;
+    color: #c084fc;
+    margin-left: 6px;
+    font-weight: 600;
+  }
+  .remove-btn {
+    background: none;
+    border: none;
+    color: #475569;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+  .remove-btn:hover { background: #3f2020; color: #f87171; }
+
+  /* Add timezone row */
+  .add-tz-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 16px 20px;
+    border-top: 1px solid #2d3148;
+    flex-wrap: wrap;
+  }
+  .add-tz-label {
+    font-size: 0.82rem;
+    color: #64748b;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* Time calculator results */
+  .calc-results {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+  }
+  .calc-box {
+    flex: 1;
+    min-width: 140px;
+    background: #252836;
+    border: 1px solid #2d3148;
+    border-radius: 10px;
+    padding: 18px 20px;
+    text-align: center;
+  }
+  .calc-box .val {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #a5b4fc;
+    font-variant-numeric: tabular-nums;
+    display: block;
+  }
+  .calc-box .unit {
+    font-size: 0.78rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+    display: block;
+  }
+  .calc-note {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-top: 10px;
+  }
+  .calc-negative .val { color: #f87171; }
+
+  .placeholder-msg {
+    padding: 32px;
+    text-align: center;
+    color: #475569;
+    font-size: 0.9rem;
+  }
+</style>
+</head>
+<body>
+
+<h1>🌐 Timezone Tools</h1>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('converter')">Timezone Converter</button>
+  <button class="tab-btn" onclick="switchTab('calculator')">Time Calculator</button>
+</div>
+
+<!-- ========== CONVERTER TAB ========== -->
+<div id="tab-converter" class="tab-panel active">
+  <div class="card">
+    <div class="input-row">
+      <div class="field">
+        <label>Enter Time</label>
+        <input type="text" id="conv-time" placeholder="e.g. 2:30 PM or 14:30" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>From Timezone</label>
+        <div class="dropdown-wrap" id="conv-tz-wrap">
+          <div class="dropdown-input" id="conv-tz-display" tabindex="0">UTC</div>
+          <div class="dropdown-menu" id="conv-tz-menu">
+            <div class="dropdown-search"><input type="text" placeholder="Search timezones…" id="conv-tz-search"></div>
+            <div class="dropdown-list" id="conv-tz-list"></div>
+          </div>
+        </div>
+      </div>
+      <div class="field" style="align-self:flex-end">
+        <button class="btn" onclick="runConvert()">Convert</button>
+      </div>
+    </div>
+    <div class="error-msg" id="conv-error">Please enter a valid time (e.g. 2:30 PM, 14:30, 9:00 AM)</div>
+
+    <div class="dst-row">
+      <span class="dst-label">Daylight Saving:</span>
+      <span class="dst-badge" id="dst-default-badge">DST</span>
+      <span class="dst-label" style="margin-left:8px">Override:</span>
+      <select class="small-select" id="dst-override" onchange="runConvert()">
+        <option value="auto">Auto (system default)</option>
+        <option value="dst">Force DST (Summer time)</option>
+        <option value="std">Force Standard time</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="conv-results-wrap">
+    <div class="placeholder-msg">Enter a time above and click Convert to see results.</div>
+  </div>
+</div>
+
+<!-- ========== CALCULATOR TAB ========== -->
+<div id="tab-calculator" class="tab-panel">
+  <div class="card">
+    <div class="input-row">
+      <div class="field">
+        <label>Target Time</label>
+        <input type="text" id="calc-time" placeholder="e.g. 5:00 PM or 17:00" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>In Timezone</label>
+        <div class="dropdown-wrap" id="calc-tz-wrap">
+          <div class="dropdown-input" id="calc-tz-display" tabindex="0">Loading…</div>
+          <div class="dropdown-menu" id="calc-tz-menu">
+            <div class="dropdown-search"><input type="text" placeholder="Search timezones…" id="calc-tz-search"></div>
+            <div class="dropdown-list" id="calc-tz-list"></div>
+          </div>
+        </div>
+      </div>
+      <div class="field" style="align-self:flex-end">
+        <button class="btn" onclick="runCalc()">Calculate</button>
+      </div>
+    </div>
+    <div class="error-msg" id="calc-error">Please enter a valid time (e.g. 5:00 PM, 17:00)</div>
+  </div>
+
+  <div id="calc-results-wrap">
+    <div class="placeholder-msg">Enter a target time above to see how far away it is.</div>
+  </div>
+</div>
+
+<script>
+// ─── Data ──────────────────────────────────────────────────────────────────
+
+const TOP_ZONES = [
+  { label: 'UTC',              tz: 'UTC' },
+  { label: 'Pacific Time',     tz: 'America/Los_Angeles' },
+  { label: 'Eastern Time',     tz: 'America/New_York' },
+  { label: 'Mountain Time',    tz: 'America/Denver' },
+  { label: 'Central Time',     tz: 'America/Chicago' },
+  { label: 'London (UK)',      tz: 'Europe/London' },
+  { label: 'Sydney (AUS)',     tz: 'Australia/Sydney' },
+];
+
+const DEFAULT_CHART_ZONES = TOP_ZONES.map(z => z.tz);
+
+// Extra zones to populate the "add timezone" dropdown and the "other" section of the main dropdown
+const ALL_ZONES = Intl.supportedValuesOf ? Intl.supportedValuesOf('timeZone') : [];
+
+// Build display name for an IANA timezone
+function tzDisplayName(tz) {
+  // Check if it's one of our top zones first
+  const top = TOP_ZONES.find(t => t.tz === tz);
+  if (top) return top.label;
+  return tz.replace(/_/g, ' ').replace(/\//g, ' / ');
+}
+
+// ─── DST detection ─────────────────────────────────────────────────────────
+
+function isDSTActive(tz, date) {
+  // Compare Jan and Jul UTC offsets; DST is active if current offset matches the "summer" offset
+  const jan = getUTCOffset(tz, new Date(date.getFullYear(), 0, 1));
+  const jul = getUTCOffset(tz, new Date(date.getFullYear(), 6, 1));
+  const cur = getUTCOffset(tz, date);
+  if (jan === jul) return false; // No DST in this zone
+  // Summer (DST) is the offset that is further from UTC (more positive or less negative)
+  return cur === Math.max(jan, jul);
+}
+
+function getUTCOffset(tz, date) {
+  // Returns offset in minutes
+  const utcStr = date.toLocaleString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: 'numeric', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit' });
+  const tzStr  = date.toLocaleString('en-US', { timeZone: tz,    hour: 'numeric', minute: 'numeric', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit' });
+  return (parseLocaleDate(tzStr) - parseLocaleDate(utcStr)) / 60000;
+}
+
+function parseLocaleDate(str) {
+  // str looks like "MM/DD/YYYY, HH:MM" from en-US locale
+  const [datePart, timePart] = str.split(', ');
+  const [m, d, y] = datePart.split('/');
+  const [h, min] = timePart.split(':');
+  return new Date(+y, +m-1, +d, +h, +min).getTime();
+}
+
+// ─── Time parsing ──────────────────────────────────────────────────────────
+
+function parseTime(raw) {
+  raw = raw.trim();
+  // Detect 12h: contains AM/PM
+  const h12 = raw.match(/^(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?\s*(AM|PM)$/i);
+  if (h12) {
+    let h = parseInt(h12[1], 10);
+    const m = parseInt(h12[2] || '0', 10);
+    const s = parseInt(h12[3] || '0', 10);
+    const ampm = h12[4].toUpperCase();
+    if (h < 1 || h > 12 || m > 59 || s > 59) return null;
+    if (ampm === 'AM') { if (h === 12) h = 0; }
+    else { if (h !== 12) h += 12; }
+    return { h, m, s };
+  }
+  // 24h
+  const h24 = raw.match(/^(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?$/);
+  if (h24) {
+    const h = parseInt(h24[1], 10);
+    const m = parseInt(h24[2] || '0', 10);
+    const s = parseInt(h24[3] || '0', 10);
+    if (h > 23 || m > 59 || s > 59) return null;
+    return { h, m, s };
+  }
+  return null;
+}
+
+// ─── Time formatting ───────────────────────────────────────────────────────
+
+function format24(h, m, s) {
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}${s ? ':'+String(s).padStart(2,'0') : ''}`;
+}
+
+function format12(h, m, s) {
+  const ampm = h < 12 ? 'AM' : 'PM';
+  let h12 = h % 12;
+  if (h12 === 0) h12 = 12;
+  return `${h12}:${String(m).padStart(2,'0')}${s ? ':'+String(s).padStart(2,'0') : ''} ${ampm}`;
+}
+
+// Convert {h,m,s} in fromTz to each target tz, returning {h,m,s} in that tz
+// Uses today's date (or the user-chosen DST mode)
+function convertTime(parsed, fromTz, toTz, dstMode) {
+  const now = new Date();
+  // Build a Date object as if it's today at the parsed time in fromTz
+  // We do this by constructing an ISO string in UTC that corresponds to that local time in fromTz
+
+  // Get UTC offset of fromTz at today's date
+  const fromOffset = getUTCOffset(fromTz, now); // minutes
+  // epoch for "today at parsed time in fromTz"
+  const todayUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(),
+                             parsed.h, parsed.m, parsed.s) - fromOffset * 60000;
+
+  // If dstMode is forced, we may need to pick a different date
+  let refDate = new Date(todayUTC);
+
+  // Convert to target tz
+  const toOffset = getUTCOffset(toTz, refDate);
+  const targetMs = todayUTC + toOffset * 60000;
+  const d = new Date(targetMs);
+  // Extract H/M/S
+  const th = d.getUTCHours();
+  const tm = d.getUTCMinutes();
+  const ts = d.getUTCSeconds();
+  const dstActive = isDSTActive(toTz, refDate);
+  return { h: th, m: tm, s: ts, dst: dstActive };
+}
+
+// ─── DST badge ─────────────────────────────────────────────────────────────
+
+function updateDSTBadge() {
+  const now = new Date();
+  // Use system local timezone
+  const sysTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const active = isDSTActive(sysTz, now);
+  const badge = document.getElementById('dst-default-badge');
+  if (active) {
+    badge.textContent = 'DST (Daylight Saving)';
+    badge.style.background = '#1e3a5f';
+    badge.style.color = '#60a5fa';
+  } else {
+    badge.textContent = 'STD (Standard Time)';
+    badge.style.background = '#2d1f4a';
+    badge.style.color = '#c084fc';
+  }
+}
+
+// ─── Dropdown builder ──────────────────────────────────────────────────────
+
+function buildDropdown(wrapId, displayId, menuId, searchId, listId, initialTz, onChange) {
+  const wrap    = document.getElementById(wrapId);
+  const display = document.getElementById(displayId);
+  const menu    = document.getElementById(menuId);
+  const search  = document.getElementById(searchId);
+  const list    = document.getElementById(listId);
+
+  let selected = initialTz;
+
+  function renderOptions(filter) {
+    filter = (filter || '').toLowerCase();
+    list.innerHTML = '';
+
+    // Top separator
+    const sep1 = document.createElement('div');
+    sep1.className = 'dropdown-option separator';
+    sep1.textContent = 'Common Timezones';
+    list.appendChild(sep1);
+
+    let topVisible = false;
+    TOP_ZONES.forEach(zone => {
+      if (filter && !zone.label.toLowerCase().includes(filter) && !zone.tz.toLowerCase().includes(filter)) return;
+      topVisible = true;
+      const opt = document.createElement('div');
+      opt.className = 'dropdown-option' + (zone.tz === selected ? ' selected' : '');
+      opt.textContent = zone.label;
+      opt.dataset.tz = zone.tz;
+      opt.addEventListener('click', () => pick(zone.tz, zone.label));
+      list.appendChild(opt);
+    });
+    if (!topVisible) {
+      const none = document.createElement('div');
+      none.className = 'dropdown-option';
+      none.style.color = '#475569';
+      none.style.fontStyle = 'italic';
+      none.textContent = 'No matches';
+      list.appendChild(none);
+    }
+
+    // Other timezones
+    const otherZones = ALL_ZONES.filter(tz => !TOP_ZONES.find(t => t.tz === tz));
+    const filtered = filter
+      ? otherZones.filter(tz => tz.toLowerCase().includes(filter))
+      : otherZones;
+
+    if (filtered.length > 0) {
+      const sep2 = document.createElement('div');
+      sep2.className = 'dropdown-option separator';
+      sep2.textContent = 'All Timezones';
+      list.appendChild(sep2);
+
+      filtered.slice(0, 200).forEach(tz => {
+        const label = tzDisplayName(tz);
+        const opt = document.createElement('div');
+        opt.className = 'dropdown-option' + (tz === selected ? ' selected' : '');
+        opt.textContent = label + ' (' + tz + ')';
+        opt.dataset.tz = tz;
+        opt.addEventListener('click', () => pick(tz, label));
+        list.appendChild(opt);
+      });
+    }
+  }
+
+  function pick(tz, label) {
+    selected = tz;
+    display.textContent = label || tzDisplayName(tz);
+    closeMenu();
+    if (onChange) onChange(tz);
+  }
+
+  function openMenu() {
+    menu.classList.add('open');
+    display.classList.add('open');
+    search.value = '';
+    renderOptions('');
+    setTimeout(() => search.focus(), 50);
+  }
+
+  function closeMenu() {
+    menu.classList.remove('open');
+    display.classList.remove('open');
+  }
+
+  display.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (menu.classList.contains('open')) closeMenu();
+    else openMenu();
+  });
+
+  display.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openMenu(); }
+    if (e.key === 'Escape') closeMenu();
+  });
+
+  search.addEventListener('input', () => renderOptions(search.value));
+
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) closeMenu();
+  });
+
+  // Initial render
+  renderOptions('');
+  display.textContent = tzDisplayName(selected);
+
+  return {
+    getValue: () => selected,
+    setValue: (tz) => pick(tz, tzDisplayName(tz))
+  };
+}
+
+// ─── Add-timezone dropdown (for chart) ─────────────────────────────────────
+
+let addTzDropdown = null;
+
+function buildAddTzDropdown() {
+  const wrap    = document.getElementById('add-tz-wrap');
+  const display = document.getElementById('add-tz-display');
+  const menu    = document.getElementById('add-tz-menu');
+  const search  = document.getElementById('add-tz-search');
+  const list    = document.getElementById('add-tz-list');
+
+  let selected = null;
+
+  function renderOptions(filter) {
+    filter = (filter || '').toLowerCase();
+    list.innerHTML = '';
+
+    const otherZones = ALL_ZONES.filter(tz => !extraZones.includes(tz) && !DEFAULT_CHART_ZONES.includes(tz));
+    const filtered = filter ? otherZones.filter(tz => tz.toLowerCase().includes(filter) || tzDisplayName(tz).toLowerCase().includes(filter)) : otherZones;
+
+    filtered.slice(0, 300).forEach(tz => {
+      const opt = document.createElement('div');
+      opt.className = 'dropdown-option' + (tz === selected ? ' selected' : '');
+      const label = tzDisplayName(tz);
+      opt.textContent = label + ' (' + tz + ')';
+      opt.dataset.tz = tz;
+      opt.addEventListener('click', () => {
+        selected = tz;
+        display.textContent = label + ' (' + tz + ')';
+        closeMenu();
+      });
+      list.appendChild(opt);
+    });
+
+    if (filtered.length === 0) {
+      const none = document.createElement('div');
+      none.style.cssText = 'padding:10px 14px;color:#475569;font-size:0.85rem;font-style:italic';
+      none.textContent = 'No timezones found';
+      list.appendChild(none);
+    }
+  }
+
+  function openMenu() {
+    menu.classList.add('open');
+    display.classList.add('open');
+    search.value = '';
+    renderOptions('');
+    setTimeout(() => search.focus(), 50);
+  }
+
+  function closeMenu() {
+    menu.classList.remove('open');
+    display.classList.remove('open');
+  }
+
+  display.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (menu.classList.contains('open')) closeMenu();
+    else openMenu();
+  });
+  search.addEventListener('input', () => renderOptions(search.value));
+  document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) closeMenu(); });
+
+  display.textContent = 'Select a timezone…';
+
+  addTzDropdown = {
+    getValue: () => selected,
+    refresh: () => renderOptions(search.value)
+  };
+}
+
+// ─── State ─────────────────────────────────────────────────────────────────
+
+let extraZones = [];    // Additional zones added to chart
+let convTzDropdown = null;
+let calcTzDropdown = null;
+
+// ─── Converter ─────────────────────────────────────────────────────────────
+
+function runConvert() {
+  const raw = document.getElementById('conv-time').value;
+  const errEl = document.getElementById('conv-error');
+  const parsed = parseTime(raw);
+
+  if (!parsed) {
+    errEl.style.display = 'block';
+    document.getElementById('conv-time').classList.add('error');
+    document.getElementById('conv-results-wrap').innerHTML = '<div class="placeholder-msg">Enter a valid time above and click Convert.</div>';
+    return;
+  }
+  errEl.style.display = 'none';
+  document.getElementById('conv-time').classList.remove('error');
+
+  const fromTz = convTzDropdown.getValue();
+  const dstMode = document.getElementById('dst-override').value;
+
+  // Build chart zones: defaults + extras
+  const chartZones = [...DEFAULT_CHART_ZONES, ...extraZones];
+
+  const rows = chartZones.map(tz => {
+    const result = convertTime(parsed, fromTz, tz, dstMode);
+    return { tz, result };
+  });
+
+  renderConvResults(rows, parsed, fromTz);
+}
+
+function renderConvResults(rows, inputParsed, fromTz) {
+  const wrap = document.getElementById('conv-results-wrap');
+  const inputStr = format24(inputParsed.h, inputParsed.m, inputParsed.s);
+
+  let html = `
+    <div class="results-card">
+      <h3>Conversion Results — ${inputStr} ${tzDisplayName(fromTz)}</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Timezone</th>
+            <th>IANA ID</th>
+            <th class="time-24">24-Hour</th>
+            <th class="time-12">12-Hour</th>
+            <th>DST Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  rows.forEach(({ tz, result }, idx) => {
+    const isDefault = DEFAULT_CHART_ZONES.includes(tz);
+    const removeBtn = isDefault ? '' : `<button class="remove-btn" title="Remove" onclick="removeExtraZone('${tz}')">✕</button>`;
+    const dstTag = result.dst
+      ? '<span class="dst-indicator">DST</span>'
+      : '<span class="std-indicator">STD</span>';
+
+    html += `
+      <tr>
+        <td class="tz-name">${tzDisplayName(tz)}</td>
+        <td style="color:#64748b;font-size:0.82rem">${tz}</td>
+        <td class="time-24">${format24(result.h, result.m, result.s)}</td>
+        <td class="time-12">${format12(result.h, result.m, result.s)}</td>
+        <td>${dstTag}</td>
+        <td>${removeBtn}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+      <div class="add-tz-row">
+        <span class="add-tz-label">Add Timezone:</span>
+        <div class="dropdown-wrap" id="add-tz-wrap">
+          <div class="dropdown-input" id="add-tz-display" tabindex="0">Select a timezone…</div>
+          <div class="dropdown-menu" id="add-tz-menu">
+            <div class="dropdown-search"><input type="text" placeholder="Search timezones…" id="add-tz-search"></div>
+            <div class="dropdown-list" id="add-tz-list"></div>
+          </div>
+        </div>
+        <button class="btn sm" onclick="addExtraZone()">Add to Chart</button>
+      </div>
+    </div>
+  `;
+
+  wrap.innerHTML = html;
+  buildAddTzDropdown();
+}
+
+function addExtraZone() {
+  const tz = addTzDropdown.getValue();
+  if (!tz || extraZones.includes(tz)) return;
+  extraZones.push(tz);
+  runConvert();
+}
+
+function removeExtraZone(tz) {
+  extraZones = extraZones.filter(z => z !== tz);
+  runConvert();
+}
+
+// ─── Calculator ────────────────────────────────────────────────────────────
+
+function runCalc() {
+  const raw = document.getElementById('calc-time').value;
+  const errEl = document.getElementById('calc-error');
+  const parsed = parseTime(raw);
+
+  if (!parsed) {
+    errEl.style.display = 'block';
+    document.getElementById('calc-time').classList.add('error');
+    document.getElementById('calc-results-wrap').innerHTML = '<div class="placeholder-msg">Enter a valid time above.</div>';
+    return;
+  }
+  errEl.style.display = 'none';
+  document.getElementById('calc-time').classList.remove('error');
+
+  const targetTz = calcTzDropdown.getValue();
+  const now = new Date();
+
+  // Get today in targetTz at the parsed hour/min/sec
+  const targetOffset = getUTCOffset(targetTz, now);
+  // Target epoch = today's date in targetTz at parsed time
+  // today's date in targetTz:
+  const nowInTzStr = now.toLocaleString('en-US', { timeZone: targetTz, year: 'numeric', month: '2-digit', day: '2-digit' });
+  const [nm, nd, ny] = nowInTzStr.split('/');
+  const targetEpoch = Date.UTC(+ny, +nm-1, +nd, parsed.h, parsed.m, parsed.s) - targetOffset * 60000;
+
+  let diffMs = targetEpoch - now.getTime();
+
+  // If negative, it's already passed today; show time until tomorrow's occurrence
+  let note = '';
+  const isFuture = diffMs >= 0;
+  if (!isFuture) {
+    // Add 24 hours
+    diffMs += 24 * 60 * 60 * 1000;
+    note = `(next occurrence — already passed today in ${tzDisplayName(targetTz)})`;
+  }
+
+  const totalSeconds = Math.round(diffMs / 1000);
+  const totalMinutes = Math.round(diffMs / 60000);
+  const totalHours = (diffMs / 3600000).toFixed(2);
+
+  const wrap = document.getElementById('calc-results-wrap');
+  const timeStr = format12(parsed.h, parsed.m, parsed.s);
+  const negativeCls = !isFuture ? ' calc-negative' : '';
+
+  wrap.innerHTML = `
+    <div class="card">
+      <div style="font-size:0.85rem;color:#94a3b8;margin-bottom:16px">
+        Time until <strong style="color:#a5b4fc">${timeStr}</strong>
+        in <strong style="color:#a5b4fc">${tzDisplayName(targetTz)}</strong>
+        ${note ? `<span style="color:#64748b;font-size:0.8rem"> ${note}</span>` : ''}
+      </div>
+      <div class="calc-results">
+        <div class="calc-box${negativeCls}">
+          <span class="val">${totalSeconds.toLocaleString()}</span>
+          <span class="unit">Total Seconds</span>
+        </div>
+        <div class="calc-box${negativeCls}">
+          <span class="val">${totalMinutes.toLocaleString()}</span>
+          <span class="unit">Total Minutes</span>
+        </div>
+        <div class="calc-box${negativeCls}">
+          <span class="val">${parseFloat(totalHours).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+          <span class="unit">Total Hours</span>
+        </div>
+      </div>
+      <p class="calc-note">Current time (now): ${now.toLocaleString('en-US', { timeZone: targetTz, hour:'numeric', minute:'2-digit', second:'2-digit', hour12:true })} ${tzDisplayName(targetTz)}</p>
+    </div>
+  `;
+}
+
+// ─── Tab switching ─────────────────────────────────────────────────────────
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    if (b.textContent.toLowerCase().includes(name === 'converter' ? 'converter' : 'calculator')) {
+      b.classList.add('active');
+    }
+  });
+}
+
+// ─── Enter key support ─────────────────────────────────────────────────────
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    if (document.activeElement === document.getElementById('conv-time') ||
+        document.activeElement.closest('#tab-converter')) {
+      if (document.getElementById('tab-converter').classList.contains('active')) runConvert();
+    }
+    if (document.activeElement === document.getElementById('calc-time') ||
+        document.activeElement.closest('#tab-calculator')) {
+      if (document.getElementById('tab-calculator').classList.contains('active')) runCalc();
+    }
+  }
+});
+
+// ─── Init ──────────────────────────────────────────────────────────────────
+
+(function init() {
+  updateDSTBadge();
+
+  // Converter timezone dropdown — default UTC
+  convTzDropdown = buildDropdown(
+    'conv-tz-wrap', 'conv-tz-display', 'conv-tz-menu', 'conv-tz-search', 'conv-tz-list',
+    'UTC',
+    () => {}
+  );
+
+  // Calculator timezone dropdown — default system tz
+  const sysTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const sysLabel = tzDisplayName(sysTz);
+  calcTzDropdown = buildDropdown(
+    'calc-tz-wrap', 'calc-tz-display', 'calc-tz-menu', 'calc-tz-search', 'calc-tz-list',
+    sysTz,
+    () => {}
+  );
+})();
+</script>
+</body>
+</html>
